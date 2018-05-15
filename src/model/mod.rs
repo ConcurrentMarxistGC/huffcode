@@ -1,9 +1,9 @@
-#[cfg(test)]
-mod tests;
-
 use error::*;
 use std::collections::HashMap;
 use std::fmt;
+
+#[cfg(test)]
+mod tests;
 
 #[derive(Serialize, Deserialize)]
 pub struct HuffmanCode {
@@ -35,6 +35,7 @@ impl From<Vec<u8>> for HuffmanCode {
 }
 
 impl HuffmanCode {
+	/// Create an empty Huffman code
 	pub fn new() -> HuffmanCode {
 		HuffmanCode {
 			code: vec![],
@@ -42,10 +43,12 @@ impl HuffmanCode {
 		}
 	}
 
+	/// Add more bits into the code
 	pub fn extend(&mut self, code: Vec<bool>) {
 		self.code.extend(code);
 	}
 
+	/// Get the next bit in the stream, panic if it fails
 	pub fn next(&mut self) -> Result<bool> {
 		if !self.exhausted() {
 			self.pos += 1;
@@ -55,12 +58,19 @@ impl HuffmanCode {
 		}
 	}
 
+	/// Check if the stream was exhausted
 	pub fn exhausted(&self) -> bool {
 		self.pos >= self.code.len()
 	}
 
+	/// Convert this Huffman Code into a vector
 	pub fn vec(self) -> Vec<bool> {
 		self.code
+	}
+
+	/// Insert a bit into the huffman code
+	pub fn push(&mut self, b: bool) {
+		self.code.push(b)
 	}
 }
 
@@ -70,10 +80,12 @@ pub struct HuffmanTree {
 }
 
 impl HuffmanTree {
+	/// Construct a huffman tree by the specified string
 	pub fn construct(text: String) -> HuffmanTree {
 		Self::construct_multi(vec![text])
 	}
 
+	/// Construct a huffman tree by the sequence of strings
 	pub fn construct_multi(text: Vec<String>) -> HuffmanTree {
 		// Node / Frequency tuple vector
 		let mut nodes = {
@@ -111,6 +123,7 @@ impl HuffmanTree {
 		HuffmanTree { root: nodes.pop().unwrap_or((Node::Leaf(0x00 as char), 0)).0 }
 	}
 
+	/// Encodes tring via the huffman tree
 	pub fn encode(&self, str: String) -> Result<HuffmanCode> {
 		let mut code = HuffmanCode::new();
 		for ch in str.chars() {
@@ -120,10 +133,24 @@ impl HuffmanTree {
 		Ok(code)
 	}
 
+	/// Encodes but drops unrecognized symbols
+	pub fn encode_sanitized(&self, str: String) -> HuffmanCode {
+		let mut code = HuffmanCode::new();
+		for ch in str.chars() {
+			if let Ok(path) = self.find(ch) {
+				code.extend(path.vec());
+			}
+		}
+
+		code
+	}
+
+	/// Finds the huffman code for the provided char, errors if it's not indexed
 	pub fn find(&self, ch: char) -> Result<HuffmanCode> {
 		Ok(self.root.get(ch)?.into())
 	}
 
+	/// Decodes huffman code provided and returns a string, if there are additional trailing bits / not enough bits to complete a character, it will produce an error
 	pub fn decode(&self, mut code: &mut HuffmanCode) -> Result<String> {
 		let mut buffer = String::new();
 
@@ -155,6 +182,7 @@ impl fmt::Debug for Node {
 }
 
 impl Node {
+	/// Get the sequence of steps to arrive at a character
 	pub fn get(&self, ch: char) -> Result<Vec<bool>> {
 		match self {
 			Node::Branch(ref l, ref r) => {
@@ -176,6 +204,7 @@ impl Node {
 		}
 	}
 
+	/// Follows steps to arrive at a character, if the code stream runs out prematurely, it will result in an error
 	pub fn traverse(&self, code: &mut HuffmanCode) -> Result<char> {
 		match self {
 			Node::Branch(ref l, ref r) => {
