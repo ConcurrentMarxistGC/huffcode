@@ -123,7 +123,7 @@ impl HuffmanTree {
 		HuffmanTree { root: nodes.pop().unwrap_or((Node::Leaf(0x00 as char), 0)).0 }
 	}
 
-	/// Encodes tring via the huffman tree
+	/// Encodes string via the huffman tree
 	pub fn encode(&self, str: String) -> Result<HuffmanCode> {
 		let mut code = HuffmanCode::new();
 		for ch in str.chars() {
@@ -133,7 +133,7 @@ impl HuffmanTree {
 		Ok(code)
 	}
 
-	/// Encodes but drops unrecognized symbols
+	/// Encodes but drops unrecognized symbols, guaranteed safe but lossless
 	pub fn encode_sanitized(&self, str: String) -> HuffmanCode {
 		let mut code = HuffmanCode::new();
 		for ch in str.chars() {
